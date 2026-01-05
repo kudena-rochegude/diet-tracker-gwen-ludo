@@ -4,12 +4,31 @@ Une application web simple et élégante pour suivre votre alimentation quotidie
 
 ## ✨ Fonctionnalités
 
-- 📊 Suivi des calories quotidiennes
-- 🍽️ Ajout de repas avec nom, description et calories
-- 📅 Historique des 7 derniers jours
-- 💾 Sauvegarde automatique dans le navigateur (localStorage)
-- 📱 Design responsive (mobile, tablette, desktop)
-- 🎨 Interface moderne et intuitive
+### 📊 Suivi des Repas
+- Ajout de repas avec nom, description et calories
+- Calcul automatique des calories quotidiennes
+- Historique des 7 derniers jours
+- Suppression individuelle ou globale des repas
+
+### 📏 Suivi des Mensurations
+- Enregistrement de vos mesures corporelles :
+  - Poids (kg)
+  - Tour de taille, hanches, poitrine (cm)
+  - Tour de bras et cuisses (cm)
+- Affichage des dernières mesures
+- Historique complet avec dates
+
+### 📅 Planification des Menus
+- Menu hebdomadaire (Lundi → Dimanche)
+- Catégories de repas (Petit-déjeuner, Déjeuner, Dîner, Collation)
+- Calcul des calories par jour
+- **Import/Export JSON** pour sauvegarder et partager vos menus
+
+### 💾 Autres fonctionnalités
+- Sauvegarde automatique dans le navigateur (localStorage)
+- Interface à onglets (Repas / Mensurations / Menu Semaine)
+- Design responsive (mobile, tablette, desktop)
+- Interface moderne avec animations
 
 ## 🚀 Déploiement sur Netlify
 
@@ -42,6 +61,41 @@ netlify deploy --prod
 Ouvrez simplement le fichier `index.html` dans votre navigateur !
 
 Aucune installation ou serveur requis.
+
+## 📤 Format JSON pour les menus
+
+Vous pouvez importer un menu au format JSON. Exemple de structure :
+
+```json
+{
+  "lundi": [
+    {
+      "id": 1704452400000,
+      "type": "petit-dejeuner",
+      "name": "Toast avocat et œufs",
+      "calories": 350
+    },
+    {
+      "id": 1704463200000,
+      "type": "dejeuner",
+      "name": "Salade César au poulet",
+      "calories": 450
+    }
+  ],
+  "mardi": [
+    {
+      "id": 1704474000000,
+      "type": "diner",
+      "name": "Saumon grillé et légumes",
+      "calories": 500
+    }
+  ]
+}
+```
+
+**Types de repas acceptés** : `petit-dejeuner`, `dejeuner`, `diner`, `collation`
+
+**Jours acceptés** : `lundi`, `mardi`, `mercredi`, `jeudi`, `vendredi`, `samedi`, `dimanche`
 
 ## 🛠️ Technologies
 
