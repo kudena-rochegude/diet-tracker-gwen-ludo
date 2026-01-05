@@ -3,6 +3,8 @@ class DietTracker {
     constructor() {
         this.meals = this.loadMeals();
         this.history = this.loadHistory();
+        this.measurements = this.loadMeasurements();
+        this.weeklyMenu = this.loadWeeklyMenu();
         this.init();
     }
 
@@ -11,10 +13,32 @@ class DietTracker {
         this.updateSummary();
         this.renderMeals();
         this.renderHistory();
+        this.renderCurrentMeasurements();
+        this.renderMeasurementsHistory();
+        this.renderWeeklyMenu();
         this.attachEventListeners();
+        this.initTabs();
+    }
+
+    // Tab Navigation
+    initTabs() {
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove active class from all buttons and contents
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                // Add active class to clicked button and corresponding content
+                btn.classList.add('active');
+                const tabName = btn.dataset.tab;
+                document.getElementById(`${tabName}-tab`).classList.add('active');
+            });
+        });
     }
 
     attachEventListeners() {
+        // Meal events
         document.getElementById('mealForm').addEventListener('submit', (e) => {
             e.preventDefault();
             this.addMeal();
@@ -31,6 +55,38 @@ class DietTracker {
                 this.clearHistory();
             }
         });
+
+        // Measurements events
+        document.getElementById('measurementsForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.addMeasurement();
+        });
+
+        document.getElementById('clearMeasurements').addEventListener('click', () => {
+            if (confirm('Êtes-vous sûr de vouloir effacer toutes les mesures ?')) {
+                this.clearMeasurements();
+            }
+        });
+
+        // Menu events
+        document.getElementById('menuForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.addMenuMeal();
+        });
+
+        document.getElementById('jsonFile').addEventListener('change', (e) => {
+            this.importMenu(e.target.files[0]);
+        });
+
+        document.getElementById('exportMenu').addEventListener('click', () => {
+            this.exportMenu();
+        });
+
+        document.getElementById('clearMenu').addEventListener('click', () => {
+            if (confirm('Êtes-vous sûr de vouloir effacer tout le menu ?')) {
+                this.clearMenu();
+            }
+        });
     }
 
     updateCurrentDate() {
@@ -45,6 +101,7 @@ class DietTracker {
         return today.toISOString().split('T')[0];
     }
 
+    // ===== MEALS FUNCTIONALITY =====
     addMeal() {
         const name = document.getElementById('mealName').value.trim();
         const description = document.getElementById('mealDescription').value.trim();
@@ -65,10 +122,7 @@ class DietTracker {
         this.updateSummary();
         this.renderMeals();
 
-        // Reset form
         document.getElementById('mealForm').reset();
-
-        // Animation feedback
         this.showNotification('Repas ajouté avec succès !');
     }
 
@@ -121,7 +175,6 @@ class DietTracker {
             return;
         }
 
-        // Sort dates in descending order
         const sortedDates = Object.keys(this.history).sort((a, b) => b.localeCompare(a));
 
         container.innerHTML = sortedDates.slice(0, 7).map(date => {
@@ -148,7 +201,6 @@ class DietTracker {
     }
 
     clearDay() {
-        // Save to history before clearing
         if (this.meals.length > 0) {
             this.saveToHistory();
         }
@@ -174,6 +226,260 @@ class DietTracker {
         this.saveHistory();
     }
 
+    // ===== MEASUREMENTS FUNCTIONALITY =====
+    addMeasurement() {
+        const measurement = {
+            id: Date.now(),
+            date: new Date().toISOString(),
+            weight: parseFloat(document.getElementById('weight').value) || null,
+            waist: parseFloat(document.getElementById('waist').value) || null,
+            hips: parseFloat(document.getElementById('hips').value) || null,
+            chest: parseFloat(document.getElementById('chest').value) || null,
+            arms: parseFloat(document.getElementById('arms').value) || null,
+            thighs: parseFloat(document.getElementById('thighs').value) || null
+        };
+
+        // Check if at least one measurement was entered
+        const hasData = Object.values(measurement).some((val, idx) => idx > 1 && val !== null);
+        if (!hasData) {
+            this.showNotification('Veuillez entrer au moins une mesure');
+            return;
+        }
+
+        this.measurements.unshift(measurement);
+        this.saveMeasurements();
+        this.renderCurrentMeasurements();
+        this.renderMeasurementsHistory();
+
+        document.getElementById('measurementsForm').reset();
+        this.showNotification('Mesures enregistrées avec succès !');
+    }
+
+    renderCurrentMeasurements() {
+        const container = document.getElementById('currentMeasurements');
+
+        if (this.measurements.length === 0) {
+            container.innerHTML = '<p class="empty-state">Aucune mesure enregistrée</p>';
+            return;
+        }
+
+        const latest = this.measurements[0];
+        const labels = {
+            weight: 'Poids',
+            waist: 'Taille',
+            hips: 'Hanches',
+            chest: 'Poitrine',
+            arms: 'Bras',
+            thighs: 'Cuisses'
+        };
+
+        const units = {
+            weight: 'kg',
+            waist: 'cm',
+            hips: 'cm',
+            chest: 'cm',
+            arms: 'cm',
+            thighs: 'cm'
+        };
+
+        container.innerHTML = Object.keys(labels).map(key => {
+            if (latest[key] === null) return '';
+            return `
+                <div class="measurement-card">
+                    <div class="value">${latest[key]} ${units[key]}</div>
+                    <div class="label">${labels[key]}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    renderMeasurementsHistory() {
+        const container = document.getElementById('measurementsHistory');
+
+        if (this.measurements.length === 0) {
+            container.innerHTML = '<p class="empty-state">Aucun historique de mesures</p>';
+            return;
+        }
+
+        const labels = {
+            weight: 'Poids',
+            waist: 'Taille',
+            hips: 'Hanches',
+            chest: 'Poitrine',
+            arms: 'Bras',
+            thighs: 'Cuisses'
+        };
+
+        const units = {
+            weight: 'kg',
+            waist: 'cm',
+            hips: 'cm',
+            chest: 'cm',
+            arms: 'cm',
+            thighs: 'cm'
+        };
+
+        container.innerHTML = this.measurements.slice(0, 10).map(m => {
+            return `
+                <div class="measurement-history-item">
+                    <h4>${this.formatDate(m.date.split('T')[0])}</h4>
+                    <div class="measurement-details">
+                        ${Object.keys(labels).map(key => {
+                            if (m[key] === null) return '';
+                            return `
+                                <div class="measurement-detail">
+                                    ${labels[key]}: <strong>${m[key]} ${units[key]}</strong>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    clearMeasurements() {
+        this.measurements = [];
+        this.saveMeasurements();
+        this.renderCurrentMeasurements();
+        this.renderMeasurementsHistory();
+        this.showNotification('Mesures effacées');
+    }
+
+    // ===== WEEKLY MENU FUNCTIONALITY =====
+    addMenuMeal() {
+        const day = document.getElementById('menuDay').value;
+        const mealType = document.getElementById('menuMealType').value;
+        const mealName = document.getElementById('menuMealName').value.trim();
+        const calories = parseInt(document.getElementById('menuCalories').value) || 0;
+
+        if (!mealName) return;
+
+        if (!this.weeklyMenu[day]) {
+            this.weeklyMenu[day] = [];
+        }
+
+        const menuMeal = {
+            id: Date.now(),
+            type: mealType,
+            name: mealName,
+            calories: calories
+        };
+
+        this.weeklyMenu[day].push(menuMeal);
+        this.saveWeeklyMenu();
+        this.renderWeeklyMenu();
+
+        document.getElementById('menuForm').reset();
+        this.showNotification('Repas ajouté au menu !');
+    }
+
+    deleteMenuMeal(day, mealId) {
+        this.weeklyMenu[day] = this.weeklyMenu[day].filter(m => m.id !== mealId);
+        if (this.weeklyMenu[day].length === 0) {
+            delete this.weeklyMenu[day];
+        }
+        this.saveWeeklyMenu();
+        this.renderWeeklyMenu();
+        this.showNotification('Repas supprimé du menu');
+    }
+
+    renderWeeklyMenu() {
+        const container = document.getElementById('weeklyMenu');
+        const days = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+
+        if (Object.keys(this.weeklyMenu).length === 0) {
+            container.innerHTML = '<p class="empty-state">Aucun menu planifié. Ajoutez des repas ou importez un fichier JSON.</p>';
+            return;
+        }
+
+        container.innerHTML = days.map(day => {
+            const meals = this.weeklyMenu[day] || [];
+            if (meals.length === 0) return '';
+
+            const totalCalories = meals.reduce((sum, m) => sum + m.calories, 0);
+
+            return `
+                <div class="day-card">
+                    <div class="day-header">
+                        <div class="day-name">${day}</div>
+                        <div class="day-total">${totalCalories} kcal</div>
+                    </div>
+                    <div class="meals-grid">
+                        ${meals.map(meal => `
+                            <div class="menu-meal">
+                                <div class="menu-meal-info">
+                                    <div class="menu-meal-type">${meal.type}</div>
+                                    <div class="menu-meal-name">${meal.name}</div>
+                                </div>
+                                <div style="display: flex; align-items: center;">
+                                    <span class="menu-meal-calories">${meal.calories} kcal</span>
+                                    <button class="btn-delete-meal" onclick="tracker.deleteMenuMeal('${day}', ${meal.id})">
+                                        ×
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    importMenu(file) {
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+
+                // Validate JSON structure
+                if (typeof data !== 'object') {
+                    throw new Error('Format JSON invalide');
+                }
+
+                this.weeklyMenu = data;
+                this.saveWeeklyMenu();
+                this.renderWeeklyMenu();
+                this.showNotification('Menu importé avec succès !');
+            } catch (error) {
+                this.showNotification('Erreur lors de l\'import: ' + error.message);
+            }
+        };
+        reader.readAsText(file);
+
+        // Reset file input
+        document.getElementById('jsonFile').value = '';
+    }
+
+    exportMenu() {
+        if (Object.keys(this.weeklyMenu).length === 0) {
+            this.showNotification('Aucun menu à exporter');
+            return;
+        }
+
+        const dataStr = JSON.stringify(this.weeklyMenu, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `menu-semaine-${this.getTodayKey()}.json`;
+        link.click();
+
+        URL.revokeObjectURL(url);
+        this.showNotification('Menu exporté avec succès !');
+    }
+
+    clearMenu() {
+        this.weeklyMenu = {};
+        this.saveWeeklyMenu();
+        this.renderWeeklyMenu();
+        this.showNotification('Menu effacé');
+    }
+
+    // ===== UTILITY FUNCTIONS =====
     formatTime(timestamp) {
         const date = new Date(timestamp);
         return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -197,7 +503,6 @@ class DietTracker {
     }
 
     showNotification(message) {
-        // Simple notification (you could enhance this with a toast library)
         const notification = document.createElement('div');
         notification.textContent = message;
         notification.style.cssText = `
@@ -221,7 +526,7 @@ class DietTracker {
         }, 2000);
     }
 
-    // LocalStorage methods
+    // ===== LOCALSTORAGE METHODS =====
     loadMeals() {
         const todayKey = this.getTodayKey();
         const saved = localStorage.getItem(`meals_${todayKey}`);
@@ -240,6 +545,24 @@ class DietTracker {
 
     saveHistory() {
         localStorage.setItem('diet_history', JSON.stringify(this.history));
+    }
+
+    loadMeasurements() {
+        const saved = localStorage.getItem('measurements');
+        return saved ? JSON.parse(saved) : [];
+    }
+
+    saveMeasurements() {
+        localStorage.setItem('measurements', JSON.stringify(this.measurements));
+    }
+
+    loadWeeklyMenu() {
+        const saved = localStorage.getItem('weekly_menu');
+        return saved ? JSON.parse(saved) : {};
+    }
+
+    saveWeeklyMenu() {
+        localStorage.setItem('weekly_menu', JSON.stringify(this.weeklyMenu));
     }
 }
 
@@ -279,4 +602,4 @@ setInterval(() => {
     if (now.getHours() === 23 && now.getMinutes() === 59 && tracker.meals.length > 0) {
         tracker.saveToHistory();
     }
-}, 60000); // Check every minute
+}, 60000);
