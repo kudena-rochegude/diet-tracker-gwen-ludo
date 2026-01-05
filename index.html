@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diet Tracker - Gwen & Ludo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🥗 Diet Tracker</h1>
+            <p class="subtitle">Suivez votre alimentation quotidienne</p>
+        </header>
+
+        <main>
+            <!-- Résumé du jour -->
+            <section class="daily-summary">
+                <h2>Aujourd'hui</h2>
+                <div class="summary-cards">
+                    <div class="card">
+                        <div class="card-value" id="totalCalories">0</div>
+                        <div class="card-label">Calories</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-value" id="mealCount">0</div>
+                        <div class="card-label">Repas</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-value" id="currentDate"></div>
+                        <div class="card-label">Date</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Formulaire d'ajout -->
+            <section class="add-meal">
+                <h2>Ajouter un repas</h2>
+                <form id="mealForm">
+                    <div class="form-group">
+                        <label for="mealName">Nom du repas</label>
+                        <input type="text" id="mealName" required placeholder="Ex: Petit-déjeuner">
+                    </div>
+                    <div class="form-group">
+                        <label for="mealDescription">Description</label>
+                        <input type="text" id="mealDescription" placeholder="Ex: Toast avec avocat">
+                    </div>
+                    <div class="form-group">
+                        <label for="calories">Calories</label>
+                        <input type="number" id="calories" required min="0" placeholder="Ex: 350">
+                    </div>
+                    <button type="submit" class="btn-primary">Ajouter</button>
+                </form>
+            </section>
+
+            <!-- Liste des repas -->
+            <section class="meals-list">
+                <div class="section-header">
+                    <h2>Repas du jour</h2>
+                    <button id="clearDay" class="btn-secondary">Effacer</button>
+                </div>
+                <div id="mealsContainer">
+                    <p class="empty-state">Aucun repas enregistré aujourd'hui</p>
+                </div>
+            </section>
+
+            <!-- Historique -->
+            <section class="history">
+                <div class="section-header">
+                    <h2>Historique</h2>
+                    <button id="clearHistory" class="btn-secondary">Tout effacer</button>
+                </div>
+                <div id="historyContainer">
+                    <p class="empty-state">Aucun historique disponible</p>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Diet Tracker - Gwen & Ludo © 2026</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
